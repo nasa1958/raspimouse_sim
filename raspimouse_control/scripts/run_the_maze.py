@@ -14,8 +14,9 @@ class WallAround():
 		self.cmd_vel = rospy.Publisher('/raspimouse_on_gazebo/diff_drive_controller/cmd_vel',Twist,queue_size=10)
 		self.sensor_values = LightSensorValues()
 
-	def wall_front(self,left_forward, right_forward):
-		return left_forward > 550 and right_forward > 550
+	def wall_front(self):
+		self.get_sensorsvalues()
+		return self.sensor_values.left_forward > 1000 and self.sensor_values.right_forward > 1000
 
 	def too_right(self,right_side):
 		return right_side > 50
@@ -36,8 +37,8 @@ class WallAround():
 		vel = Twist()
 		vel.linear.x = 0.0
 		vel.angular.z = 0.0
-		print left_forward
-		print right_forward
+		#print left_forward
+		#print right_forward
 		if (left_forward - right_forward) > 50:
 			vel.linear.x = 0.0
 			vel.angular.z = 90*math.pi/180.0/10.0
@@ -103,12 +104,16 @@ class WallAround():
 		#print self.sensor_values.right_side
 		#print self.sensor_values.left_side
 		#print self.sensor_values.left_forward
-		while not rospy.is_shutdown():
-			self.get_sensorsvalues()
-			if (self.set_position(self.sensor_values.left_forward, self.sensor_values.right_forward)):
-				break
 		
 		while not rospy.is_shutdown():
+			while not rospy.is_shutdown():
+				self.get_sensorsvalues()
+				if (self.set_position(self.sensor_values.left_forward, self.sensor_values.right_forward)):
+					break
+		        if self.wall_front():
+				f =  '前に壁があります'
+				self.send_slack(f)
+				break
 			vel.linear.x = 0.18
 			vel.angular.z = 0.0
 			sleep(0.3)
@@ -120,9 +125,9 @@ class WallAround():
 			self.cmd_vel.publish(vel)
 			sleep(1.4)
 			while(num_1 < 4):
-				while not rospy.is_shutdown():
-					self.get_sensorsvalues()
-					if (self.set_position(self.sensor_values.left_forward, self.sensor_values.right_forward)): break
+				#while not rospy.is_shutdown():
+				#	self.get_sensorsvalues()
+				#	if (self.set_position(self.sensor_values.left_forward, self.sensor_values.right_forward)): break
 				vel.linear.x = 0.0					
 				vel.angular.z = -90*math.pi/180.0
 				sleep(0.3)
