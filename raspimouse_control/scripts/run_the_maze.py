@@ -23,8 +23,7 @@ class WallAround():
 	def too_left(self,left_side):
 		return left_side > 50
 
-	def send_slack(self):
-		content = f
+	def send_slack(self,content):
 		payload = {
                     	"text": content,
                     	"icon_emoji": ':snake:',
@@ -37,40 +36,30 @@ class WallAround():
 		vel = Twist()
 		vel.linear.x = 0.0
 		vel.angular.z = 0.0
-		while(abs(left_forward - right_forward) < 50):
-			if (left_forward - right_forward) > 50:
-				vel.angular.z = 90*math.pi/180.0/10.0
-			if (left_forward - right_forward) < -50:
-				vel.angular.z = -90*math.pi/180.0/10.0
+		print left_forward
+		print right_forward
+		if (left_forward - right_forward) > 50:
+			vel.linear.x = 0.0
+			vel.angular.z = 90*math.pi/180.0/10.0
+			sleep(0.3)
 			self.cmd_vel.publish(vel)
-			self.get_sensorsvalues()
-		return 1
+			sleep(1.4)
+			return 0
+		elif (left_forward - right_forward) < -50:
+			vel.linear.x = 0.0
+			vel.angular.z = -90*math.pi/180.0/10.0
+			sleep(0.3)
+			self.cmd_vel.publish(vel)
+			sleep(1.4) 
+			return 0
+		else: return 1
 
 	def get_sensorsvalues(self):
-		self.sensor_values = LightSensorValues()
-		for num_2 in range(8):
-			with open(devfile,'r') as f:
-				data = f.readline().split()
-				self.sensor_values.right_forward += int(data[0])
-				self.sensor_values.right_side += int(data[1])
-				self.sensor_values.left_forward += int(data[2])
-				self.sensor_values.left_side += int(data[3])
-		self.sensor_values.right_forward = self.sensor_values.right_forward / 8.0
-		self.sensor_values.right_side = self.sensor_values.right_side / 8.0
-		self.sensor_values.left_side = self.sensor_values.left_side / 8.0
-		self.sensor_values.left_forward = self.sensor_values.left_forward / 8.0
-		print self.sensor_values.right_forward
-		print self.sensor_values.right_side
-		print self.sensor_values.left_forward
-		print self.sensor_values.left_side
-		return 1
-	
-	def run(self):
-		self.sensor_values = LightSensorValues()
-		vel = Twist()
-		num_1 = 0
-		judge = []
-		rate = rospy.Rate(20)
+		#self.sensor_values = LightSensorValues()
+		self.sensor_values.right_forward = 0.0
+		self.sensor_values.right_side = 0.0
+		self.sensor_values.left_side = 0.0
+		self.sensor_values.left_forward = 0.0
 		for num_2 in range(8):
 			with open(devfile,'r') as f:
 				data = f.readline().split()
@@ -82,37 +71,81 @@ class WallAround():
 		self.sensor_values.right_side = self.sensor_values.right_side / 8.0
 		self.sensor_values.left_side = self.sensor_values.left_side / 8.0
 		self.sensor_values.left_forward = self.sensor_values.left_forward / 8.0
+		#print self.sensor_values.right_forward
+		#print self.sensor_values.right_side
+		#print self.sensor_values.left_forward
+		#print self.sensor_values.left_side
+		return 1
+	
+	def run(self):
+		self.sensor_values = LightSensorValues()
+		vel = Twist()
+		num_1 = 0
+		judge = []
+		rate = rospy.Rate(20)
+		#for num_2 in range(8):
+			#with open(devfile,'r') as f:
+				#data = f.readline().split()
+				#self.sensor_values.right_forward += int(data[0])
+				#self.sensor_values.right_side += int(data[1])
+				#self.sensor_values.left_side += int(data[2])
+				#self.sensor_values.left_forward += int(data[3])
+				#print self.sensor_values.right_forward
+				#print self.sensor_values.right_side
+				#print self.sensor_values.left_side
+				#print self.sensor_values.left_forward
+		#self.sensor_values.right_forward = self.sensor_values.right_forward / 8.0
+		#self.sensor_values.right_side = self.sensor_values.right_side / 8.0
+		#self.sensor_values.left_side = self.sensor_values.left_side / 8.0
+		#self.sensor_values.left_forward = self.sensor_values.left_forward / 8.0
 
-		print self.sensor_values.right_forward
-		print self.sensor_values.right_side
-		print self.sensor_values.left_side
-		print self.sensor_values.left_forward
-
-		self.set_position(self.sensor_values.left_forward, self.sensor_values.right_forward)
+		#print self.sensor_values.right_forward
+		#print self.sensor_values.right_side
+		#print self.sensor_values.left_side
+		#print self.sensor_values.left_forward
+		while not rospy.is_shutdown():
+			self.get_sensorsvalues()
+			if (self.set_position(self.sensor_values.left_forward, self.sensor_values.right_forward)):
+				break
 		
 		while not rospy.is_shutdown():
-			vel.angular.x = 0.18
+			vel.linear.x = 0.18
+			vel.angular.z = 0.0
+			sleep(0.3)
 			self.cmd_vel.publish(vel)
-			vel.angular.x = 0.18
+			sleep(1.4)
+			vel.linear.x = 0.18
+			vel.angular.z = 0.0
+			sleep(0.3)
 			self.cmd_vel.publish(vel)
+			sleep(1.4)
 			while(num_1 < 4):
-				if (self.set_position(self.sensor_values.left_forward, self.sensor_values.right_forward)):
-					vel.angular.z = -90*math.pi/180.0
-					self.cmd_vel.publish(vel)
-					vel.angular.z = -90*math.pi/180.0
-					self.cmd_vel.publish(vel)
+				while not rospy.is_shutdown():
 					self.get_sensorsvalues()
-					if self.sensor_values.left_forward < 200 and self.sensor_values.right_forward < 200:
-                				judge.append(1)
-            				else:
-                				judge.append(0)
-				        num_1 = num_1 + 1
+					if (self.set_position(self.sensor_values.left_forward, self.sensor_values.right_forward)): break
+				vel.linear.x = 0.0					
+				vel.angular.z = -90*math.pi/180.0
+				sleep(0.3)
+				self.cmd_vel.publish(vel)
+				sleep(1.4)
+				vel.linear.x = 0.0
+				vel.angular.z = -90*math.pi/180.0
+				sleep(0.3)
+				self.cmd_vel.publish(vel)
+				sleep(1.4)
+				self.get_sensorsvalues()
+				if self.sensor_values.left_forward < 200 and self.sensor_values.right_forward < 200:
+               				judge.append(1)
+           			else:
+               				judge.append(0)
+				num_1 = num_1 + 1
 
 			a = ''
     			b = ''
     			c = ''
     			d = ''
     			e = 'に進めます'
+			f = ''
     			if judge[0] == 1:
         			a = '右　'
     			if judge[1] == 1:
@@ -124,7 +157,7 @@ class WallAround():
     			f = a + b + c + d + e
 
 			if (judge[0] or judge[2]):
-				self.send_slack()
+				self.send_slack(f)
 				break
 
 		rate.sleep()
